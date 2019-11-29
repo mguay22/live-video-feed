@@ -1,6 +1,7 @@
 import path from 'path';
 import express from 'express';
 import bodyParser from 'body-parser';
+import 'babel-polyfill';
 
 const AWS = require('aws-sdk');
 const fs = require('fs');

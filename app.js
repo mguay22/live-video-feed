@@ -6,6 +6,8 @@ var _express = _interopRequireDefault(require("express"));
 
 var _bodyParser = _interopRequireDefault(require("body-parser"));
 
+require("babel-polyfill");
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 
 var AWS = require('aws-sdk');
@@ -25,7 +27,7 @@ AWS.config.update({
 AWS.config.setPromisesDependency(bluebird);
 var s3 = new AWS.S3();
 var app = (0, _express["default"])();
-var PORT = process.env.HTTP_PORT || 4001;
+var PORT = process.env.PORT || 4001;
 app.use(_express["default"]["static"](_path2["default"].join(__dirname, 'build')));
 
 var uploadFile = function uploadFile(buffer, name, type) {
