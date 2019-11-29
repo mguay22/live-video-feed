@@ -1,98 +1,70 @@
-"use strict";
+import path from 'path';
+import express from 'express';
+import bodyParser from 'body-parser';
 
-var _path2 = _interopRequireDefault(require("path"));
-
-var _express = _interopRequireDefault(require("express"));
-
-var _bodyParser = _interopRequireDefault(require("body-parser"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
-
-var AWS = require('aws-sdk');
-
-var fs = require('fs');
-
-var fileType = require('file-type');
-
-var bluebird = require('bluebird');
-
-var multiparty = require('multiparty');
+const AWS = require('aws-sdk');
+const fs = require('fs');
+const fileType = require('file-type');
+const bluebird = require('bluebird');
+const multiparty = require('multiparty');
 
 AWS.config.update({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
 });
-AWS.config.setPromisesDependency(bluebird);
-var s3 = new AWS.S3();
-var app = (0, _express["default"])();
-var PORT = process.env.HTTP_PORT || 4001;
-app.use(_express["default"]["static"](_path2["default"].join(__dirname, 'build')));
 
-var uploadFile = function uploadFile(buffer, name, type) {
-  var params = {
-    ACL: 'public-read',
-    Body: buffer,
-    Bucket: process.env.S3_BUCKET,
-    ContentType: type.mime,
-    Key: "".concat(name, ".").concat(type.ext)
-  };
-  return s3.upload(params).promise();
+AWS.config.setPromisesDependency(bluebird);
+
+const s3 = new AWS.S3();
+
+const app = express()
+const PORT = process.env.HTTP_PORT || 4001;
+
+app.use(express.static(path.join(__dirname, 'build')));
+
+const uploadFile = (buffer, name, type) => {
+    const params = {
+        ACL: 'public-read',
+        Body: buffer,
+        Bucket: process.env.S3_BUCKET,
+        ContentType: type.mime,
+        Key: `${name}.${type.ext}`
+    };
+    return s3.upload(params).promise();
 };
 
-app.post('/upload-video', function (req, res) {
-  var form = new multiparty.Form();
-  form.parse(req, function _callee(error, fields, files) {
-    var _path, buffer, type, timestamp, fileName, data;
-
-    return regeneratorRuntime.async(function _callee$(_context) {
-      while (1) {
-        switch (_context.prev = _context.next) {
-          case 0:
-            if (!error) {
-              _context.next = 2;
-              break;
-            }
-
-            throw new Error(error);
-
-          case 2:
-            _context.prev = 2;
-            _path = files.file[0].path;
-            buffer = fs.readFileSync(_path);
-            type = fileType(buffer);
-            timestamp = Date.now().toString();
-            fileName = "videos/".concat(timestamp, "-lg");
-            _context.next = 10;
-            return regeneratorRuntime.awrap(uploadFile(buffer, fileName, type));
-
-          case 10:
-            data = _context.sent;
-            return _context.abrupt("return", res.status(200).send(data));
-
-          case 14:
-            _context.prev = 14;
-            _context.t0 = _context["catch"](2);
-            console.log(_context.t0);
-            return _context.abrupt("return", res.status(400).send(_context.t0));
-
-          case 18:
-          case "end":
-            return _context.stop();
-        }
+app.post('/upload-video', (req, res) => {
+    const form = new multiparty.Form();
+    form.parse(req, async (error, fields, files) => {
+      if (error) throw new Error(error);
+      try {
+        const path = files.file[0].path;
+        const buffer = fs.readFileSync(path);
+        const type = fileType(buffer);
+        const timestamp = Date.now().toString();
+        const fileName = `videos/${timestamp}-lg`;
+        const data = await uploadFile(buffer, fileName, type);
+        return res.status(200).send(data);
+      } catch (error) {
+        console.log(error);
+        return res.status(400).send(error);
       }
-    }, null, null, [[2, 14]]);
-  });
+    });
 });
-app.get('/video', function (req, res) {
-  var params = {
-    Bucket: process.env.S3_BUCKET,
-    Prefix: 'videos/'
-  };
-  s3.listObjects(params, function (err, data) {
-    console.log(data.Contents.length);
-    res.json(data.Contents[data.Contents.length - 1].Key);
-  });
+
+app.get('/video', (req, res) => {
+    const params = {
+        Bucket: process.env.S3_BUCKET,
+        Prefix: 'videos/'
+        };
+
+        s3.listObjects(params, (err, data) => {
+            console.log(data.Contents.length);
+            res.json(data.Contents[data.Contents.length - 1].Key);
+        });
 });
-app.listen(PORT, function () {
-  console.log("Server listening at port ".concat(PORT, "."));
+
+app.listen(PORT, () => {
+    console.log(`Server listening at port ${PORT}.`);
 });
+
