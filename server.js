@@ -18,7 +18,7 @@ AWS.config.setPromisesDependency(bluebird);
 const s3 = new AWS.S3();
 
 const app = express()
-const PORT = process.env.HTTP_PORT || 4001;
+const PORT = process.env.PORT || 4001;
 
 app.use(express.static(path.join(__dirname, 'build')));
 
