@@ -14,7 +14,7 @@
   },
   "scripts": {
     "start": "nodemon --exec babel-node app.js",
-    "build": "babel app.js --out-file server.compiled.js"
+    "build": "babel server.js --out-file app.js"
   },
   "devDependencies": {
     "@babel/cli": "^7.7.4",
